@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+
+  temperature:
+    image: pluspeterpublic/temperature:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+
+  windspeed:
+      image: pluspeterpublic/windspeed:latest
+      ports:
+        - "8080:8080"
+      environment:
+        - PORT=8080
+      restart: unless-stopped
+  
+  weather:
+      build: ./weatherservice
+      ports:
+        - "8888:8888"
+      environment:
+        - PORT=8888
+      restart: unless-stopped
