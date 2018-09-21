@@ -95,9 +95,6 @@ Loop2:
 			if t.Date == "" {
 				t.Error = fmt.Sprint("Data not available for given date")
 			}
-			if t.Error != "" {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
 			temp = append(temp, t)
 		case <-time.After(time.Millisecond * 500):
 			break Loop2
@@ -119,14 +116,12 @@ func (tapi TemperatureAPI) Get() {
 	resp, err := http.Get(fmt.Sprintf("%s%s", tapi.URL, tapi.Date))
 	if err != nil {
 		temp.Error = err.Error()
-		return
 	}
 
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&temp); err != nil {
 		temp.Error = err.Error()
-		return
 	}
 
 	tapi.resChan <- temp

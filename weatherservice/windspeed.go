@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -35,7 +34,7 @@ func (wsapi WindSpeedAPI) WindSpeedHandler(w http.ResponseWriter, r *http.Reques
 		end   string
 	)
 
-	// create a buffered channel that receives Temperature structs
+	// create a buffered channel that receives WindSpeed structs
 	wsapi.resChan = make(chan WindSpeedResponse, 5)
 
 	// Exctracts the query params from the url.
@@ -46,7 +45,6 @@ func (wsapi WindSpeedAPI) WindSpeedHandler(w http.ResponseWriter, r *http.Reques
 	end = values.Get("end")
 
 	// iterate over the date range and execute the requests in  a goroutine.
-	// TODO: iterate over date range given.
 	startDate, err := ISO8601ToTime(start)
 	if err != nil {
 		er := Error{Error: err.Error()}
@@ -122,14 +120,14 @@ func (wsapi WindSpeedAPI) Get() {
 
 	resp, err := http.Get(fmt.Sprintf("%s%s", wsapi.URL, wsapi.Date))
 	if err != nil {
-		log.Println(err)
+		wsresp.Error = err.Error()
 		return
 	}
 
 	defer resp.Body.Close()
 
 	if err := json.NewDecoder(resp.Body).Decode(&wsresp); err != nil {
-		log.Println(err)
+		wsresp.Error = err.Error()
 		return
 	}
 

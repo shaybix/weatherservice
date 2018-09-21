@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -48,7 +47,6 @@ func (wapi WeatherAPI) WeatherHandler(w http.ResponseWriter, r *http.Request) {
 	end = values.Get("end")
 
 	// iterate over the date range and execute the requests in  a goroutine.
-	// TODO: iterate over date range given.
 	startDate, err := ISO8601ToTime(start)
 	if err != nil {
 		er := Error{Error: err.Error()}
@@ -66,7 +64,6 @@ func (wapi WeatherAPI) WeatherHandler(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 	wapi.wg = &wg
 
-	// daysBetween := endDate.Sub(startDate).Hours() / 24
 	jobsChan := make(chan APIGetter, 3)
 	wp := WorkerPool{jobsChan: jobsChan, rateLimit: 30}
 
@@ -77,7 +74,6 @@ Loop:
 			wapi.Date = d.Format(time.RFC3339)
 			worker := Worker{apiRequest: wapi}
 			wp.queue = append(wp.queue, worker)
-			// go tapi.Get()
 
 			break Loop
 		}
@@ -85,7 +81,6 @@ Loop:
 		wapi.Date = d.Format(time.RFC3339)
 		worker := Worker{apiRequest: wapi}
 		wp.queue = append(wp.queue, worker)
-		// go tapi.Get()
 	}
 
 	go wp.Run()
@@ -122,33 +117,34 @@ func (wapi WeatherAPI) Get() {
 	var (
 		tempResp TemperatureResponse
 		windResp WindSpeedResponse
+		wresp    WeatherResponse
 	)
 
 	defer wapi.wg.Done()
 
 	tresp, err := http.Get(fmt.Sprintf("%s%s", wapi.TemperatureURL, wapi.Date))
 	if err != nil {
-		log.Println(err)
+		wresp.Error = err.Error()
 		return
 	}
 	defer tresp.Body.Close()
 	if err := json.NewDecoder(tresp.Body).Decode(&tempResp); err != nil {
-		log.Println(err)
+		wresp.Error = err.Error()
 		return
 	}
 
 	wndresp, err := http.Get(fmt.Sprintf("%s%s", wapi.WindSpeedURL, wapi.Date))
 	if err != nil {
-		log.Println(err)
+		wresp.Error = err.Error()
 		return
 	}
 	defer wndresp.Body.Close()
 	if err := json.NewDecoder(wndresp.Body).Decode(&windResp); err != nil {
-		log.Println(err)
+		wresp.Error = err.Error()
 		return
 	}
 
-	wresp := WeatherResponse{
+	wresp = WeatherResponse{
 		North: windResp.North,
 		West:  windResp.West,
 		Temp:  tempResp.Temp,
